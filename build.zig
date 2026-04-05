@@ -1,11 +1,5 @@
 const std = @import("std");
 
-const Language = enum {
-    all,
-    cpp,
-    ts,
-};
-
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});

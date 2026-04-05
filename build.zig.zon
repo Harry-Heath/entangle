@@ -4,8 +4,8 @@
     .version = "0.0.1",
     .minimum_zig_version = "0.16.0-dev.3070+b22eb176b",
     .paths = .{
-        "src",
         "lib",
+        "src",
         "test",
     },
     .dependencies = .{
