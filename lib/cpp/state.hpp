@@ -80,6 +80,7 @@ struct Object
             if (it == map->end())
                 it = map->insert({id, Node::Map{}}).first;
 
+            // TODO: Make sure this is a map
             auto& variant = it->second.mValue;
             map = &std::get<Node::Map>(variant);
         }
@@ -98,6 +99,7 @@ struct Object
             auto it = map->find(id);
             if (it == map->end()) return;
 
+            // TODO: Make sure this is a map
             auto& variant = it->second.mValue;
             map = &std::get<Node::Map>(variant);
         }
@@ -191,7 +193,6 @@ struct Property : public IProperty
         mValue = value;
 
         Packet packet{Packet::MAX_SIZE};
-
         Writer writer{packet};
 
         for (const uint8_t& b : mPrefix)
@@ -217,8 +218,9 @@ struct PropertyArray
     std::vector<uint8_t> mPrefix;
     Object& mRoot;
 
-    Property<uint8_t> mSize{UINT8_MAX, mPrefix, mRoot};
     std::vector<std::unique_ptr<T>> mProperties{};
+    Property<uint8_t> mSize{UINT8_MAX, mPrefix, mRoot};
+    std::function<void(const T&)> mSizeChanged{};
 
     PropertyArray(uint8_t id, std::span<const uint8_t> prefix, Object& root)
         : mPrefix(make_prefix(prefix, id))
@@ -227,6 +229,7 @@ struct PropertyArray
         mSize.mChanged = [this](uint8_t size)
         {
             this->resizeArray(size);
+            if (this->mSizeChanged) this->mSizeChanged(size);
         };
     }
 

@@ -48,4 +48,10 @@ pub fn build(b: *std.Build) void {
     const cpp_test_step = b.step("test-cpp", "Run cpp tests");
     cpp_test_step.dependOn(&cpp_test_run.step);
     test_step.dependOn(&cpp_test_run.step);
+
+    // Ts tests
+    const ts_test_run = b.addSystemCommand(&.{ "npx", "ts-node", "test/ts/main.ts" });
+    const ts_test_step = b.step("test-ts", "Run ts tests");
+    ts_test_step.dependOn(&ts_test_run.step);
+    test_step.dependOn(&ts_test_run.step);
 }
