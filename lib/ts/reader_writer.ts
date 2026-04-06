@@ -49,7 +49,42 @@ export type TypeDesc<T> = {
     read: (reader: Reader) => T;
     write: (writer: Writer, value: T) => void;
     default: () => T,
+    validate: (value: T) => void;
 };
+
+export function makeTypeDesc<T>(
+    fields: { [K in keyof T]: TypeDesc<T[K]> }
+): TypeDesc<T> {
+    return {
+        read: (reader: Reader) => {
+            let result = {} as T;
+            for (const key in fields) {
+                result[key] = fields[key].read(reader);
+            }
+            return result;
+        },
+
+        write: (writer: Writer, value: T) => {
+            for (const key in fields) {
+                fields[key].write(writer, value[key]);
+            }
+        },
+
+        default: () => {
+            let result = {} as T;
+            for (const key in fields) {
+                result[key] = fields[key].default();
+            }
+            return result;
+        },
+
+        validate: (value: T) => {
+            for (const key in fields) {
+                fields[key].validate(value[key]);
+            }
+        },
+    };
+}
 
 
 /// uint8_t
@@ -63,11 +98,18 @@ export const U8: TypeDesc<number> = {
     write: (writer: Writer, value: number) => {
         let span = writer.take(1);
         if (span.byteLength == 0) return;
-
         span.setUint8(0, value);
     },
 
     default: () => 0,
+
+    validate: (value: number) => {
+        if (!Number.isInteger(value))
+            throw new Error("Value is not an integer");
+
+        if ((value < 0) || (value > 0xFF))
+            throw new Error("Value is not within U8 range");
+    },
 };
 
 
@@ -86,6 +128,14 @@ export const U16: TypeDesc<number> = {
     },
 
     default: () => 0,
+
+    validate: (value: number) => {
+        if (!Number.isInteger(value))
+            throw new Error("Value is not an integer");
+
+        if ((value < 0) || (value > 0xFF_FF))
+            throw new Error("Value is not within U16 range");
+    },
 };
 
 
@@ -104,6 +154,14 @@ export const U32: TypeDesc<number> = {
     },
 
     default: () => 0,
+
+    validate: (value: number) => {
+        if (!Number.isInteger(value))
+            throw new Error("Value is not an integer");
+
+        if ((value < 0) || (value > 0xFF_FF_FF_FF))
+            throw new Error("Value is not within U32 range");
+    },
 };
 
 
@@ -122,6 +180,8 @@ export const U64: TypeDesc<bigint> = {
     },
 
     default: () => BigInt(0),
+
+    validate: (value: bigint) => {},
 };
 
 
@@ -140,6 +200,8 @@ export const F32: TypeDesc<number> = {
     },
 
     default: () => 0,
+
+    validate: (value: number) => {},
 };
 
 
@@ -158,11 +220,13 @@ export const F64: TypeDesc<number> = {
     },
 
     default: () => 0,
+
+    validate: (value: number) => {},
 };
 
 
 /// array
-export function makeArray<T>(size: number, child: TypeDesc<T>): TypeDesc<T[]>
+export function makeArrayDesc<T>(size: number, child: TypeDesc<T>): TypeDesc<T[]>
 {
     return {
         read: (reader: Reader) => {
@@ -189,12 +253,22 @@ export function makeArray<T>(size: number, child: TypeDesc<T>): TypeDesc<T[]>
             }
             return array;
         },
+
+        validate: (values: T[]) => {
+            if (values.length != size)
+                throw new Error("Array is wrong size");
+
+            for (let i = 0; i < size; i++)
+            {
+                child.validate(values[i]);
+            }
+        },
     };
 }
 
 
 /// vector
-export function makeVector<T>(child: TypeDesc<T>): TypeDesc<T[]>
+export function makeVectorDesc<T>(child: TypeDesc<T>): TypeDesc<T[]>
 {
     return {
         read: (reader: Reader) => {
@@ -217,5 +291,15 @@ export function makeVector<T>(child: TypeDesc<T>): TypeDesc<T[]>
         },
 
         default: () => [],
+
+        validate: (values: T[]) => {
+            if (values.length > 255)
+                throw new Error("Vector is too large");
+
+            for (let i = 0; i < values.length; i++)
+            {
+                child.validate(values[i]);
+            }
+        },
     };
 }

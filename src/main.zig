@@ -3,13 +3,18 @@ const zon = std.zon.parse;
 const Io = std.Io;
 const Dir = Io.Dir;
 const Schema = @import("Schema.zig");
+
 const cpp = @import("cpp.zig");
+const ts = @import("ts.zig");
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.arena.allocator();
     const io = init.io;
     const args = try init.minimal.args.toSlice(gpa);
     const cwd = Dir.cwd();
+
+    if (args.len != 3)
+        return error.BadArgCount;
 
     // Read file
     const filename = args[1];
@@ -30,5 +35,11 @@ pub fn main(init: std.process.Init) !void {
         else => return err,
     };
 
-    std.debug.print("{s}", .{try cpp.write(schema, gpa)});
+    const lang = args[2];
+
+    if (std.mem.eql(u8, lang, "cpp")) {
+        std.debug.print("{s}", .{try cpp.write(schema, gpa)});
+    } else if (std.mem.eql(u8, lang, "ts")) {
+        std.debug.print("{s}", .{try ts.write(schema, gpa)});
+    } else return error.UnknownLang;
 }

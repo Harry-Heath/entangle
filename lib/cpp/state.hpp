@@ -220,7 +220,7 @@ struct PropertyArray
 
     std::vector<std::unique_ptr<T>> mProperties{};
     Property<uint8_t> mSize{UINT8_MAX, mPrefix, mRoot};
-    std::function<void(const T&)> mSizeChanged{};
+    std::function<void(uint8_t)> mSizeChanged{};
 
     PropertyArray(uint8_t id, std::span<const uint8_t> prefix, Object& root)
         : mPrefix(make_prefix(prefix, id))

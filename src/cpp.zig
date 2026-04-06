@@ -215,13 +215,10 @@ fn writeProperty(self: *Self, p: Schema.Property) !void {
         // Add array property
         if (p.array) |array| switch (array) {
             .variable_length => try writer.print(
-                "Property<std::vector<{s}>> {s}{{ {}, mPrefix, mRoot }};",
+                "PropertyArray<Property<{s}>> {s}{{ {}, mPrefix, mRoot }};",
                 .{ t, field_name, p.id },
             ),
-            .length => |length| try writer.print(
-                "Property<std::array<{s}, {}>> {s}{{ {}, mPrefix, mRoot }};",
-                .{ t, length, field_name, p.id },
-            ),
+            .length => return error.TODO,
         }
         // Otherwise just property
         else try writer.print(

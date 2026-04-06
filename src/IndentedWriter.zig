@@ -15,6 +15,10 @@ pub fn print(self: *IndentedWriter, comptime format: []const u8, args: anytype) 
     try self.writer.print(format ++ "\n", args);
 }
 
+pub fn write(self: *IndentedWriter, text: []const u8) !void {
+    try self.writer.writeAll(text);
+}
+
 pub fn indent(self: *IndentedWriter) void {
     self.indent_level += 1;
 }

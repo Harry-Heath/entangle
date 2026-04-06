@@ -42,6 +42,15 @@ export type Params = {
     root: Object2 
 };
 
+export function makeParams(id: number, prefix: number[], root: Object2): Params
+{
+    return {
+        id: id,
+        prefix: prefix,
+        root: root,
+    };
+}
+
 export class Object2
 {
     _prefix: number[];
@@ -62,6 +71,11 @@ export class Object2
             this._prefix = [];
             this._root = this;
         }     
+    }
+
+    makeParams(id: number): Params
+    {
+        return makeParams(id, this._prefix, this._root);
     }
 
     addProperty(prefix: number[], property: IProperty): void
@@ -170,6 +184,7 @@ export class Property<T> implements IProperty
 
     set(value: T): void
     {
+        this._typeDesc.validate(value);
         this._value = value;
         
         let packet = new Packet(Packet.MAX_SIZE);
@@ -209,11 +224,7 @@ export class PropertyArray<T>
         this._root = params.root;
 
         this._properties = [];
-        this._size = new Property({
-            id: 255, 
-            prefix: this._prefix, 
-            root: this._root
-        }, rw.U8);
+        this._size = new Property(makeParams(255, this._prefix, this._root), rw.U8);
 
         this._factory = factory;
 
@@ -230,11 +241,7 @@ export class PropertyArray<T>
         this._properties = [];
         for (let i = 0; i < size; i++)
         {
-            this._properties.push(this._factory({ 
-                id: i, 
-                prefix: this._prefix, 
-                root: this._root, 
-            }));
+            this._properties.push(this._factory(makeParams(i, this._prefix, this._root)));
         }
     }
 
@@ -249,7 +256,7 @@ export class PropertyArray<T>
         return this._properties.length;
     }
 
-    get(index: number): T
+    at(index: number): T
     {
         return this._properties[index];
     }

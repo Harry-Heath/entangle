@@ -49,7 +49,7 @@ struct SensorSettings : public Object
     SensorSettings() = default;
     SensorSettings(uint8_t id, std::span<const uint8_t> prefix, Object& root) : Object(id, prefix, root) {}
     Property<Resolution> resolution{ 0, mPrefix, mRoot };
-    Property<std::array<float, 3>> zoom{ 1, mPrefix, mRoot };
+    PropertyArray<Property<float>> zoom{ 1, mPrefix, mRoot };
 };
 
 struct ControlSettings : public Object
@@ -73,7 +73,8 @@ int main()
     properties.controls.velocity.set({3, 4});
     properties.sensors.resize(4);
     properties.sensors[0].resolution.set(Resolution::R1080P);
-    properties.sensors[1].zoom.set({0, 1, 2});
+    properties.sensors[1].zoom.resize(3);
+    properties.sensors[1].zoom[0].set(1);
 
     printf("%lld\n", properties.mQueue.size());
 
