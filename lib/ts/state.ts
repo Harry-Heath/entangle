@@ -212,32 +212,47 @@ export class PropertyArray<T>
     _prefix: number[];
     _root: Object2;
 
+    _resizable: boolean;
+    _size: number;
+
     _properties: T[];
-    _size: Property<number>;
+    _sizeProperty?: Property<number>;
     _sizeChanged: (value: number) => void = () => {};
 
     _factory: (params: Params) => T;
 
-    constructor(params: Params, factory: (params: Params) => T)
+    constructor(params: Params, factory: (params: Params) => T, size: number = 0)
     {
         this._prefix = [...params.prefix, params.id];
         this._root = params.root;
 
-        this._properties = [];
-        this._size = new Property(makeParams(255, this._prefix, this._root), rw.U8);
+        this._resizable = size == 0;
+        this._size = size;
 
+        this._properties = [];
         this._factory = factory;
 
-        this._size._changed = (size: number) => {
-            this.resizeArray(size);
-            this._sizeChanged(size);
-        };
+        if (this._resizable)
+        {
+            this._sizeProperty = new Property(makeParams(255, this._prefix, this._root), rw.U8);
+            this._sizeProperty._changed = (size: number) => {
+                this.resizeArray(size);
+                this._sizeChanged(size);
+            };
+        }
+        else
+        {
+            this.resizeArray(this._size);
+        }
     }
 
     resizeArray(size: number): void
     {
         this._root.removeProperty(this._prefix);
-        this._root.addProperty(this._size._prefix, this._size);
+
+        if (this._resizable)
+            this._root.addProperty(this._sizeProperty!._prefix, this._sizeProperty!);
+
         this._properties = [];
         for (let i = 0; i < size; i++)
         {
@@ -247,17 +262,15 @@ export class PropertyArray<T>
 
     resize(size: number): void
     {
+        if (!this._resizable) return;
+
         this.resizeArray(size);
-        this._size.set(size);
+        this._sizeProperty!.set(size);
     }
 
-    size(): number
-    {
-        return this._properties.length;
-    }
+    size(): number { return this._properties.length; }
 
-    at(index: number): T
-    {
-        return this._properties[index];
-    }
+    resizable(): boolean { return this._resizable; }
+
+    at(index: number): T { return this._properties[index]; }
 }

@@ -218,25 +218,41 @@ struct PropertyArray
     std::vector<uint8_t> mPrefix;
     Object& mRoot;
 
+    bool mResizable{};
+    uint8_t mSize{};
+
     std::vector<std::unique_ptr<T>> mProperties{};
-    Property<uint8_t> mSize{UINT8_MAX, mPrefix, mRoot};
+    std::unique_ptr<Property<uint8_t>> mpSizeProperty{};
     std::function<void(uint8_t)> mSizeChanged{};
 
-    PropertyArray(uint8_t id, std::span<const uint8_t> prefix, Object& root)
+    PropertyArray(uint8_t id, std::span<const uint8_t> prefix, Object& root, uint8_t size = 0)
         : mPrefix(make_prefix(prefix, id))
         , mRoot(root)
+        , mResizable(size == 0)
+        , mSize(size)
     {
-        mSize.mChanged = [this](uint8_t size)
+        if (mResizable)
         {
-            this->resizeArray(size);
-            if (this->mSizeChanged) this->mSizeChanged(size);
-        };
+            mpSizeProperty = std::make_unique<Property<uint8_t>>(UINT8_MAX, mPrefix, mRoot);
+            mpSizeProperty->mChanged = [this](uint8_t size)
+            {
+                this->resizeArray(size);
+                if (this->mSizeChanged) this->mSizeChanged(size);
+            };
+        }
+        else
+        {
+            resizeArray(mSize);
+        }
     }
 
     void resizeArray(uint8_t size)
     {
         mRoot.removeProperty(mPrefix);
-        mRoot.addProperty(mSize.mPrefix, &mSize);
+
+        if (mResizable) 
+            mRoot.addProperty(mpSizeProperty->mPrefix, mpSizeProperty.get());
+
         mProperties.clear();
         for (uint8_t i = 0; i < size; i++)
         {
@@ -246,11 +262,15 @@ struct PropertyArray
 
     void resize(uint8_t size)
     {
+        if (!mResizable) 
+            return;
+
         resizeArray(size);
-        mSize.set(size);
+        mpSizeProperty->set(size);
     }
 
     uint8_t size() const { return (uint8_t)mProperties.size(); }
+    bool resizable() const { return mResizable; }
 
     T& operator[](uint8_t index)
     {

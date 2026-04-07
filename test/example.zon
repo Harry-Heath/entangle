@@ -34,7 +34,7 @@
                     .description = "Zoom amount",
                     .id = 1,
                     .type = "f32",
-                    .array = .variable_length,
+                    .array = .{ .length = 3 },
                 },
             },
         },

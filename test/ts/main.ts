@@ -46,14 +46,14 @@ class Example extends Object2
     constructor(params?: Params)
     {
         super(params);
-        this.sensors = new PropertyArray(this.makeParams(0), (params) => { return new SensorSettings(params);});
+        this.sensors = new PropertyArray(this.makeParams(0), (params) => { return new SensorSettings(params);}, 4);
         this.controls = new ControlSettings(this.makeParams(1));
     }
 };
 
 const properties = new Example();
 properties.controls.velocity.set({x: 3, y: 4});
-properties.sensors.resize(4);
+// properties.sensors.resize(4);
 properties.sensors.at(0).resolution.set(Resolution.R1080P);
 properties.sensors.at(1).zoom.resize(3);
 properties.sensors.at(1).zoom.at(0).set(1);

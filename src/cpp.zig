@@ -214,11 +214,18 @@ fn writeProperty(self: *Self, p: Schema.Property) !void {
     if (type_opt) |t| {
         // Add array property
         if (p.array) |array| switch (array) {
-            .variable_length => try writer.print(
-                "PropertyArray<Property<{s}>> {s}{{ {}, mPrefix, mRoot }};",
-                .{ t, field_name, p.id },
-            ),
-            .length => return error.TODO,
+            .variable_length => {
+                try writer.print(
+                    "PropertyArray<Property<{s}>> {s}{{ {}, mPrefix, mRoot }};",
+                    .{ t, field_name, p.id },
+                );
+            },
+            .length => |length| {
+                try writer.print(
+                    "PropertyArray<Property<{s}>> {s}{{ {}, mPrefix, mRoot, {} }};",
+                    .{ t, field_name, p.id, length },
+                );
+            },
         }
         // Otherwise just property
         else try writer.print(
@@ -230,11 +237,18 @@ fn writeProperty(self: *Self, p: Schema.Property) !void {
     if (object_opt) |o| {
         // Add array property
         if (p.array) |array| switch (array) {
-            .variable_length => try writer.print(
-                "PropertyArray<{s}> {s}{{ {}, mPrefix, mRoot }};",
-                .{ o, field_name, p.id },
-            ),
-            .length => return error.TODO,
+            .variable_length => {
+                try writer.print(
+                    "PropertyArray<{s}> {s}{{ {}, mPrefix, mRoot }};",
+                    .{ o, field_name, p.id },
+                );
+            },
+            .length => |length| {
+                try writer.print(
+                    "PropertyArray<{s}> {s}{{ {}, mPrefix, mRoot, {} }};",
+                    .{ o, field_name, p.id, length },
+                );
+            },
         }
         // Otherwise just property
         else try writer.print(

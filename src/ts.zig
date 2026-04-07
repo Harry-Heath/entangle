@@ -192,15 +192,33 @@ fn writeProperty(self: *Self, p: Schema.Property, constructor_writer: *IndentedW
         // Add array property
         if (p.array) |array| switch (array) {
             .variable_length => {
-                try writer.print("{s}: PropertyArray<Property<{s}>>;", .{ field_name, t.type_name });
-                try constructor_writer.print("this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new Property<{s}>(params, {s}); }} );", .{ field_name, p.id, t.type_name, t.desc_name });
+                try writer.print(
+                    "{s}: PropertyArray<Property<{s}>>;",
+                    .{ field_name, t.type_name },
+                );
+                try constructor_writer.print(
+                    "this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new Property<{s}>(params, {s}); }} );",
+                    .{ field_name, p.id, t.type_name, t.desc_name },
+                );
             },
-            .length => return error.TODO,
+            .length => |length| {
+                try writer.print(
+                    "{s}: PropertyArray<Property<{s}>>;",
+                    .{ field_name, t.type_name },
+                );
+                try constructor_writer.print(
+                    "this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new Property<{s}>(params, {s}); }}, {} );",
+                    .{ field_name, p.id, t.type_name, t.desc_name, length },
+                );
+            },
         }
         // Otherwise just property
         else {
             try writer.print("{s}: Property<{s}>;", .{ field_name, t.type_name });
-            try constructor_writer.print("this.{s} = new Property(this.makeParams({}), {s});", .{ field_name, p.id, t.desc_name });
+            try constructor_writer.print(
+                "this.{s} = new Property(this.makeParams({}), {s});",
+                .{ field_name, p.id, t.desc_name },
+            );
         }
     }
 
@@ -208,15 +226,36 @@ fn writeProperty(self: *Self, p: Schema.Property, constructor_writer: *IndentedW
         // Add array property
         if (p.array) |array| switch (array) {
             .variable_length => {
-                try writer.print("{s}: PropertyArray<{s}>;", .{ field_name, o });
-                try constructor_writer.print("this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new {s}(params);}});", .{ field_name, p.id, o });
+                try writer.print(
+                    "{s}: PropertyArray<{s}>;",
+                    .{ field_name, o },
+                );
+                try constructor_writer.print(
+                    "this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new {s}(params); }} );",
+                    .{ field_name, p.id, o },
+                );
             },
-            .length => return error.TODO,
+            .length => |length| {
+                try writer.print(
+                    "{s}: PropertyArray<{s}>;",
+                    .{ field_name, o },
+                );
+                try constructor_writer.print(
+                    "this.{s} = new PropertyArray(this.makeParams({}), (params) => {{ return new {s}(params);}}, {} );",
+                    .{ field_name, p.id, o, length },
+                );
+            },
         }
         // Otherwise just property
         else {
-            try writer.print("{s}: {s};", .{ field_name, o });
-            try constructor_writer.print("this.{s} = new {s}(this.makeParams({}));", .{ field_name, o, p.id });
+            try writer.print(
+                "{s}: {s};",
+                .{ field_name, o },
+            );
+            try constructor_writer.print(
+                "this.{s} = new {s}(this.makeParams({}));",
+                .{ field_name, o, p.id },
+            );
         }
     }
 }
