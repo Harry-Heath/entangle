@@ -8,7 +8,7 @@ int main()
     properties.sensors.resize(4);
     properties.sensors[0].resolution.set(Resolution::R1080P);
     // properties.sensors[1].zoom.resize(3);
-    properties.sensors[1].zoom[0].set(1);
+    properties.sensors[1].zoom.set(100.f);
 
     printf("%lld\n", properties.mQueue.size());
 

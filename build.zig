@@ -11,14 +11,14 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
     });
     const exe = b.addExecutable(.{
-        .name = "statey2",
+        .name = "wormhole",
         .root_module = mod,
     });
     b.installArtifact(exe);
 
     mod.addImport("case", b.dependency("case", .{}).module("case"));
-    mod.addAnonymousImport("lib_cpp", .{ .root_source_file = b.path("lib/cpp/wormhole.hpp") });
-    mod.addAnonymousImport("lib_ts", .{ .root_source_file = b.path("lib/ts/wormhole.ts") });
+    mod.addAnonymousImport("lib/cpp", .{ .root_source_file = b.path("lib/cpp/wormhole.hpp") });
+    mod.addAnonymousImport("lib/ts", .{ .root_source_file = b.path("lib/ts/wormhole.ts") });
 
     const run_step = b.step("run", "Runs");
     const run = b.addRunArtifact(exe);

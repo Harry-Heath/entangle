@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cmath>
 #include <vector>
 #include <map>
 #include <span>
@@ -292,6 +293,44 @@ static void write(Writer& writer, const std::vector<T>& value)
         writer.write(value[i]);
     }
 }
+
+
+/// range
+static uint64_t max_value(uint8_t bytes)
+{
+    return ((uint64_t)1 << (bytes * 8)) - 1;
+}
+
+static void read_range(Reader& reader, float& value, uint8_t bytes, float min, float max)
+{
+    // Read encoded
+    uint64_t encoded = 0;
+    for (uint8_t i = bytes; i--;)
+    {
+        uint8_t step{};
+        reader.read(step);
+        encoded |= (uint64_t)step << (i * 8);
+    }
+
+    // Lerp between min max
+    double t = encoded / (double)max_value(bytes);
+    value = min * (1.0 - t) + max * t;
+}
+
+static void write_range(Writer& writer, float value, uint8_t bytes, float min, float max)
+{
+    // Inverse lerp between min max
+    double t = (value - min) / (max - min);
+    uint64_t encoded = round(t * max_value(bytes));
+
+    // Write encoded
+    for (uint8_t i = bytes; i--;)
+    {
+        uint8_t step = encoded >> (i * 8);
+        writer.write(step);
+    }
+}
+
 
 /*------------------------------ Wormhole Types ------------------------------*/
 

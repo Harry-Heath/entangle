@@ -4,7 +4,7 @@ const IndentedWriter = @import("IndentedWriter.zig");
 const case = @import("case");
 const Self = @This();
 
-const library_source = @embedFile("lib_ts");
+const library_source = @embedFile("lib/ts");
 
 schema: Schema,
 gpa: std.mem.Allocator,
@@ -64,15 +64,19 @@ fn setupTypeMap(self: *Self) !void {
     try map.put("f64", .{ .type_name = "number", .desc_name = "types.F64" });
 
     for (self.schema.types) |t| {
+        const active: []const bool = &.{ t.fields != null, t.values != null, t.range != null };
+        var active_count: u8 = 0;
+        for (active) |a| active_count += @intFromBool(a);
 
-        // Must have either fields or values
-        if ((t.fields != null) == (t.values != null)) {
+        // Must have exactly one
+        if (active_count != 1) {
             // TODO: print error
             return error.BadZon;
         }
 
-        const type_name = try case.allocTo(self.gpa, .pascal, t.name);
-        const rw_type = if (t.values != null) "types.U8" else try std.fmt.allocPrint(self.gpa, "{s}Desc", .{type_name});
+        const pascal_name = try case.allocTo(self.gpa, .pascal, t.name);
+        const type_name = if (t.range != null) "number" else pascal_name;
+        const rw_type = if (t.values != null) "types.U8" else try std.fmt.allocPrint(self.gpa, "{s}Desc", .{pascal_name});
         try map.put(t.name, .{ .type_name = type_name, .desc_name = rw_type });
     }
 }
@@ -150,6 +154,12 @@ fn writeType(self: *Self, t: Schema.Type) !void {
 
         writer.deindent();
         try writer.print("}};\n", .{});
+    }
+
+    // Write range
+    if (t.range) |range| {
+        // Desc definition
+        try writer.print("const {s} = types.makeRangeDesc({},{},{});\n", .{ type_info.desc_name, range.bytes, range.min, range.max });
     }
 }
 

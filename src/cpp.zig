@@ -6,7 +6,7 @@ const Self = @This();
 
 const Map = std.StringHashMap([]const u8);
 
-const library_source = @embedFile("lib_cpp");
+const library_source = @embedFile("lib/cpp");
 
 schema: Schema,
 gpa: std.mem.Allocator,
@@ -87,8 +87,12 @@ fn writeTypes(self: *Self) !void {
 fn writeType(self: *Self, t: Schema.Type) !void {
     const writer = self.writer;
 
-    // Must have either fields or values
-    if ((t.fields != null) == (t.values != null)) {
+    const active: []const bool = &.{ t.fields != null, t.values != null, t.range != null };
+    var active_count: u8 = 0;
+    for (active) |a| active_count += @intFromBool(a);
+
+    // Must have exactly one
+    if (active_count != 1) {
         // TODO: print error
         return error.BadZon;
     }
@@ -183,6 +187,42 @@ fn writeType(self: *Self, t: Schema.Type) !void {
         writer.indent();
 
         try writer.print("writer.write(static_cast<uint8_t>(value));", .{});
+
+        writer.deindent();
+        try writer.print("}}\n", .{});
+    }
+
+    // Write range
+    if (t.range) |range| {
+        // Struct definition
+        try writer.print("struct {s}", .{type_name});
+        try writer.print("{{", .{});
+        writer.indent();
+
+        try writer.print("float value = {};", .{range.min});
+        try writer.print("{s}() = default;", .{type_name});
+        try writer.print("{s}(float v) : value{{v}} {{}}", .{type_name}); // TODO: clamp?
+        try writer.print("operator float() const {{ return value; }}", .{});
+
+        writer.deindent();
+        try writer.print("}};\n", .{});
+
+        // Read function
+        try writer.print("static void read(wh::Reader& reader, {s}& value)", .{type_name});
+        try writer.print("{{", .{});
+        writer.indent();
+
+        try writer.print("read_range(reader, value.value, {}, {}, {});", .{ range.bytes, range.min, range.max });
+
+        writer.deindent();
+        try writer.print("}}\n", .{});
+
+        // Write function
+        try writer.print("static void write(wh::Writer& writer, const {s}& value)", .{type_name});
+        try writer.print("{{", .{});
+        writer.indent();
+
+        try writer.print("write_range(writer, value.value, {}, {}, {});", .{ range.bytes, range.min, range.max });
 
         writer.deindent();
         try writer.print("}}\n", .{});

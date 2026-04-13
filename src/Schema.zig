@@ -6,6 +6,7 @@ pub const Type = struct {
     description: ?[]const u8 = null,
     fields: ?[]const Field = null,
     values: ?[]const EnumValue = null,
+    range: ?Range = null,
 };
 
 pub const Object = struct {
@@ -32,6 +33,12 @@ pub const Field = struct {
 pub const EnumValue = struct {
     name: []const u8,
     value: u8,
+};
+
+pub const Range = struct {
+    min: f32,
+    max: f32,
+    bytes: u32,
 };
 
 pub const Array = union(enum) {

@@ -273,6 +273,46 @@ function makeVectorDesc<T>(child: TypeDesc<T>): TypeDesc<T[]>
 }
 
 
+/// range
+function maxValue(bytes: number)
+{
+    return (1 << (bytes * 8)) - 1;
+}
+
+function makeRangeDesc(bytes: number, min: number, max: number): TypeDesc<number>
+{
+    return {
+        read: (reader: Reader) => {
+            let encoded = 0;
+            for (let i = bytes; i--;)
+            {
+                let step = U8.read(reader);
+                encoded |= step << (i * 8);
+            }
+            let t = encoded / maxValue(bytes);
+            return min * (1 - t) + max * t;
+        },
+
+        write: (writer: Writer, value: number) => {
+            let t = (value - min) / (max - min);
+            let encoded = Math.round(t * maxValue(bytes));
+            for (let i = bytes; i--;)
+            {
+                let step = (encoded >> (i * 8)) & 0xff;
+                U8.write(writer, step);
+            }
+        },
+
+        default: () => min,
+
+        validate: (value: number) => {
+            if (value < min || value > max)
+                throw new Error("Value outside of range");
+        },
+    };
+}
+
+
 function makeTypeDesc<T>(
     fields: { [K in keyof T]: TypeDesc<T[K]> }
 ): TypeDesc<T> {
@@ -319,6 +359,7 @@ export const types = {
     makeArrayDesc: makeArrayDesc,
     makeVectorDesc: makeVectorDesc,
     makeTypeDesc: makeTypeDesc,
+    makeRangeDesc: makeRangeDesc,
 };
 
 

@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log;
 
 pub const Language = enum {
     cpp,
@@ -54,56 +55,85 @@ pub fn parseArgs(ar: []const []const u8) ParseError!Args {
         }
         // Input
         else if (equalAny(arg, &.{ "-i", "--input" })) {
-            if (input != null)
+            if (input != null) {
+                log.err("Multiple input arguments, only one can be used", .{});
                 return error.BadArgs;
+            }
 
             input = it.next();
 
             if ((input == null) or
                 (input.?.len == 0) or
                 (input.?[0] == '-'))
+            {
+                log.err("Missing input file after input flag", .{});
                 return error.BadArgs;
+            }
         }
         // Output
         else if (equalAny(arg, &.{ "-o", "--output" })) {
-            if (output != null)
+            if (output != null) {
+                log.err("Multiple output arguments, only one can be used", .{});
                 return error.BadArgs;
+            }
 
             output = it.next();
 
             if ((output == null) or
                 (output.?.len == 0) or
                 (output.?[0] == '-'))
+            {
+                log.err("Missing output file after output flag", .{});
                 return error.BadArgs;
+            }
         }
         // Language
         else if (equalAny(arg, &.{ "-l", "--language" })) {
-            if (language != null)
+            if (language != null) {
+                log.err("Multiple language arguments, only one can be used", .{});
                 return error.BadArgs;
+            }
 
             const language_string = it.next();
 
-            if (language_string == null)
+            if (language_string == null) {
+                log.err("Missing language value after language flag", .{});
                 return error.BadArgs;
+            }
 
-            language = std.meta.stringToEnum(Language, language_string.?) orelse
+            language = std.meta.stringToEnum(Language, language_string.?) orelse {
+                log.err("Invalid language value '{?s}'", .{language_string});
                 return error.BadArgs;
+            };
         }
         // Embed library
         else if (equalAny(arg, &.{ "-e", "--embed-lib" })) {
-            if (embed_library)
+            if (embed_library) {
+                log.err("Multiple embed library arguments, only one can be used", .{});
                 return error.BadArgs;
+            }
 
             embed_library = true;
         }
         // Unknown arg
-        else return error.BadArgs;
+        else {
+            log.err("Unknown argument '{s}'", .{arg});
+            return error.BadArgs;
+        }
     }
 
-    if ((input == null) or
-        (output == null) or
-        (language == null))
+    if (input == null) {
+        log.err("Missing input argument", .{});
         return error.MissingArgs;
+    }
+    if (output == null) {
+        log.err("Missing output argument", .{});
+        return error.MissingArgs;
+    }
+    if (language == null) {
+        log.err("Missing language argument", .{});
+        return error.MissingArgs;
+    }
 
     return .{
         .input = input.?,
